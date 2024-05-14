@@ -6,14 +6,16 @@ import Data.Char (intToDigit)
 g :: Float
 g = 9.81 -- Gravity
 v0 :: Float
-v0 = 4.0 -- Initial velocity (m/s)
+v0 = 200 -- Initial velocity (m/s)
 
 -- Calculating the projectile's position
 position :: Float -> Float -> (Float, Float)
 position theta t = (x, y)
-    where
-        x = v0 * cos (theta * pi / 180) * t
-        y = v0 * sin (theta * pi / 180) * t - 0.5 * g * t^2
+    where 
+        vx = cos (theta * pi / 180) :: Float
+        vy = sin (theta * pi / 180) :: Float
+        x = v0 * vx * t
+        y = v0 * vy * t - 0.5 * g * t^2
 
 -- Generate trajectory points
 trajectory :: Float -> [(Float, Float)]
@@ -24,13 +26,16 @@ plotTrajectory :: [(Float, Float)] -> IO ()
 plotTrajectory points = do
     let maxY = maximum $ map snd points
         maxX = maximum $ map fst points
-        ratioX = maxX / fromIntegral (width - 1)
-        ratioY = maxY / fromIntegral (height - 1)
+        ratioX = 4000 / fromIntegral (width - 1)
+        ratioY = 2300 / fromIntegral (height - 1)
 
         points' = [(floor (x / ratioX), floor(y / ratioY)) | (x,y) <- points]
         grid = replicate height (replicate width ' ')
         grid' = foldl (\acc (x,y) -> updateGrid acc x y) grid points'
     putStrLn $ unlines $ reverse $ map concat $ map (map (:[])) grid'
+
+maxHeight :: [(Float, Float)] -> Float
+maxHeight points = maximum $ map snd points
 
 -- Update grid function with boundary check
 updateGrid :: [[Char]] -> Int -> Int -> [[Char]]
@@ -44,7 +49,7 @@ updateLine line x
     | otherwise = take x line ++ ['*'] ++ drop (x + 1) line
 
 width :: Int
-width = 60
+width = 80
 
 height :: Int
 height = 20
@@ -53,4 +58,11 @@ main :: IO()
 main = do
     putStrLn "Enter launch angle (deg):"
     theta <- readLn
-    plotTrajectory $ trajectory theta
+    let traj = trajectory theta
+    plotTrajectory traj
+    let (lastX, _) = last traj
+    printf "Flying distance: %.2f meters\n" lastX
+
+    let highestY = maxHeight traj
+    printf "Highest hight: %.2f meters\n" highestY
+
